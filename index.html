@@ -124,7 +124,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // KONFIGURASI: isi URL project dan publishable/anon key dari Supabase Dashboard. Jangan masukkan service_role/secret key.
-window.KUMBARA_SUPABASE_CONFIG = { url: "ISI_SUPABASE_PROJECT_URL", anonKey: "ISI_SUPABASE_PUBLISHABLE_KEY" };
+window.KUMBARA_SUPABASE_CONFIG = { url: "https://bwllhfivdsemiwdjdyew.supabase.co/rest/v1/", anonKey: "sb_publishable_oMHyC5pEF8hr-4FPvrMhaQ_z0qTlvdj" };
 window.kumbaraSupabase = null;
 window.kumbaraSupabaseReady = false;
 try { const c=window.KUMBARA_SUPABASE_CONFIG; if(window.supabase && c.url.startsWith('https://') && c.anonKey && !c.anonKey.includes('ISI_SUPABASE')) { window.kumbaraSupabase=window.supabase.createClient(c.url,c.anonKey); window.kumbaraSupabaseReady=true; } } catch(e) { console.error('Supabase belum dikonfigurasi',e); }
