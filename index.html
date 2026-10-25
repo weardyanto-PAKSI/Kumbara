@@ -334,8 +334,60 @@ async function submitFeedback(e){e.preventDefault();let addQuestion=document.get
  if(window.kumbaraSupabaseReady){try{const {error:dbError}=await window.kumbaraSupabase.from('feedbacks').insert({participant_name:item.name,level:selectedLevel,game_rating:item.game,design_rating:item.design,learning_rating:item.learning,ease_rating:item.ease,suggestion:item.suggestion,question_suggestion:addQuestion?{type:type,level:document.getElementById('fbQLevel').value,question:document.getElementById('fbQText').value.trim()}:null});if(dbError)console.warn('Feedback belum tersimpan ke Supabase:',dbError.message)}catch(dbEx){console.warn('Feedback cloud error',dbEx)}}
  localStorage.setItem('kumbara_feedback',JSON.stringify(feedbacks));feedbackSubmittedThisGame=true;document.getElementById('fbDone').classList.remove('hidden');document.getElementById('fbDone').innerHTML='Terima kasih, <strong>'+esc(item.name)+'</strong>! Feedback berhasil disimpan di perangkat ini.'+(addQuestion?'<p>📝 Usulan soal '+(type==='tf'?'Benar/Salah':'pilihan ganda')+' sudah dikirim dan menunggu persetujuan admin.</p>':'')+'<p>Beranda akan dibuka kembali sebentar lagi.</p>';e.target.reset();toggleQuestionSuggestion();document.getElementById('fbLevel').value=LEVELS[selectedLevel];toast('Feedback tersimpan. Kembali ke beranda…');setTimeout(()=>{document.body.classList.remove('feedback-mode');document.getElementById('feedbackSection').classList.add('hidden');document.getElementById('game').classList.add('hidden');document.getElementById('endOverlay').classList.remove('show');document.getElementById('home').classList.remove('hidden');document.getElementById('fbDone').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'})},1800)}
 
-function renderQuestionSuggestions(){let el=document.getElementById('questionSuggestionList');if(!el)return;el.innerHTML=questionSuggestions.length?questionSuggestions.slice().reverse().map(q=>`<article class="admin-question"><strong>${esc(q.question)}</strong><p class="small">Pengusul: ${esc(q.name)} · Level: ${esc(LEVELS[q.level]||q.level)} · Status: <strong>${q.status==='pending'?'Menunggu persetujuan':q.status==='approved'?'Disetujui':'Ditolak'}</strong></p><p>${q.type==='tf'?'Jenis: Benar/Salah':q.options.map((o,i)=>String.fromCharCode(65+i)+'. '+esc(o)).join('<br>')}</p><p class="small">Jawaban yang diusulkan: ${esc(q.type==='tf'?(q.correct?'Benar':'Salah'):(q.options[q.correct]||'—'))}<br>Pembahasan: ${esc(q.explain)}</p>${q.status==='pending'?`<div class="admin-actions"><button class="primary" onclick="reviewQuestionSuggestion(${q.id},true)">✅ Setujui & tambahkan</button><button class="danger" onclick="reviewQuestionSuggestion(${q.id},false)">Tolak</button></div>`:''}</article>`).join(''):'<p class="notice">Belum ada usulan soal dari pemain.</p>'}
-function reviewQuestionSuggestion(id,approve){let q=questionSuggestions.find(x=>x.id===id);if(!q||q.status!=='pending')return;if(approve){if(!questions[q.level]){toast('Level soal tidak valid.');return}if(q.type==='tf'){trueFalseQuestions[q.level].push([q.question,!!q.correct,q.explain]);saveTrueFalse();}else{questions[q.level].push([q.question,q.options,q.correct,q.explain]);localStorage.setItem('kumbara_questions',JSON.stringify(questions));}q.status='approved';toast('Soal disetujui dan ditambahkan ke bank soal.');renderAdminQuestions()}else{q.status='rejected';toast('Usulan soal ditolak.')}localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));renderQuestionSuggestions()}
+function renderQuestionSuggestions(){
+ const el=document.getElementById('questionSuggestionList');if(!el)return;
+ if(!questionSuggestions.length){el.innerHTML='<p class="notice">Belum ada usulan soal dari pemain.</p>';return;}
+ el.innerHTML=questionSuggestions.slice().reverse().map(q=>{
+  const opts=Array.isArray(q.options)?q.options:['','','',''];
+  const isPending=q.status==='pending';
+  const correctVal=q.type==='tf'?(q.correct?'true':'false'):String(q.correct??0);
+  return `<article class="admin-question" style="margin-bottom:14px" id="suggestion-${q.id}">
+   <strong>${esc(q.question)}</strong>
+   <p class="small">Pengusul: ${esc(q.name||'Pemain')} · Level: ${esc(LEVELS[q.level]||q.level)} · Status: <strong>${isPending?'Menunggu persetujuan':q.status==='approved'?'Disetujui':'Ditolak'}</strong></p>
+   <p>${q.type==='tf'?'Jenis: Benar/Salah':opts.map((o,i)=>String.fromCharCode(65+i)+'. '+esc(o)).join('<br>')}</p>
+   <p class="small">Jawaban: ${esc(q.type==='tf'?(q.correct?'Benar':'Salah'):(opts[q.correct]||'—'))}<br>Pembahasan: ${esc(q.explain||'—')}</p>
+   ${isPending?`<details class="suggestion-edit"><summary style="cursor:pointer;font-weight:700">✏️ Edit soal sebelum menyetujui</summary>
+    <div class="field"><label for="sq-text-${q.id}">Pertanyaan</label><textarea id="sq-text-${q.id}" rows="3" maxlength="1000">${esc(q.question||'')}</textarea></div>
+    <div class="field"><label for="sq-level-${q.id}">Level</label><select id="sq-level-${q.id}">${Object.entries(LEVELS).map(([k,v])=>`<option value="${esc(k)}" ${q.level===k?'selected':''}>${esc(v)}</option>`).join('')}</select></div>
+    ${q.type==='mc'?`<div class="field"><label for="sq-opt-${q.id}-0">Pilihan A</label><input id="sq-opt-${q.id}-0" value="${esc(opts[0]||'')}" maxlength="500"></div><div class="field"><label for="sq-opt-${q.id}-1">Pilihan B</label><input id="sq-opt-${q.id}-1" value="${esc(opts[1]||'')}" maxlength="500"></div><div class="field"><label for="sq-opt-${q.id}-2">Pilihan C</label><input id="sq-opt-${q.id}-2" value="${esc(opts[2]||'')}" maxlength="500"></div><div class="field"><label for="sq-opt-${q.id}-3">Pilihan D</label><input id="sq-opt-${q.id}-3" value="${esc(opts[3]||'')}" maxlength="500"></div><div class="field"><label for="sq-correct-${q.id}">Kunci jawaban</label><select id="sq-correct-${q.id}">${opts.map((o,i)=>`<option value="${i}" ${Number(q.correct)===i?'selected':''}>${String.fromCharCode(65+i)} — ${esc(o||('Pilihan '+String.fromCharCode(65+i)))}</option>`).join('')}</select></div>`:`<div class="field"><label for="sq-correct-${q.id}">Kunci jawaban</label><select id="sq-correct-${q.id}"><option value="true" ${q.correct?'selected':''}>Benar</option><option value="false" ${!q.correct?'selected':''}>Salah</option></select></div>`}
+    <div class="field"><label for="sq-explain-${q.id}">Pembahasan</label><textarea id="sq-explain-${q.id}" rows="3" maxlength="1200">${esc(q.explain||'')}</textarea></div>
+    <button class="secondary" onclick="saveQuestionSuggestionEdit(${q.id})">💾 Simpan perubahan</button>
+   </details>
+   <div class="admin-actions"><button class="primary" onclick="reviewQuestionSuggestion(${q.id},true)">✅ Setujui & tambahkan</button><button class="danger" onclick="reviewQuestionSuggestion(${q.id},false)">🗑️ Tolak & hapus</button></div>`:''}
+   ${q.status==='rejected'?`<div class="admin-actions"><button class="danger" onclick="deleteQuestionSuggestion(${q.id})">🗑️ Hapus usulan</button></div>`:''}
+  </article>`;
+ }).join('');
+}
+function saveQuestionSuggestionEdit(id){
+ const q=questionSuggestions.find(x=>String(x.id)===String(id));if(!q||q.status!=='pending')return;
+ const question=document.getElementById(`sq-text-${id}`).value.trim();
+ const explain=document.getElementById(`sq-explain-${id}`).value.trim();
+ const level=document.getElementById(`sq-level-${id}`).value;
+ if(!question||!explain){toast('Pertanyaan dan pembahasan wajib diisi.');return;}
+ q.question=question;q.explain=explain;q.level=level;
+ if(q.type==='tf')q.correct=document.getElementById(`sq-correct-${id}`).value==='true';
+ else {q.options=[0,1,2,3].map(i=>document.getElementById(`sq-opt-${id}-${i}`).value.trim());if(q.options.some(x=>!x)){toast('Semua empat pilihan jawaban wajib diisi.');return;}q.correct=Number(document.getElementById(`sq-correct-${id}`).value);}
+ q.updatedAt=new Date().toISOString();localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));renderQuestionSuggestions();toast('Perubahan usulan soal berhasil disimpan.');
+}
+function deleteQuestionSuggestion(id){
+ const q=questionSuggestions.find(x=>String(x.id)===String(id));if(!q)return;
+ if(!confirm('Hapus permanen usulan soal dari '+(q.name||'pemain')+'?'))return;
+ questionSuggestions=questionSuggestions.filter(x=>String(x.id)!==String(id));localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));renderQuestionSuggestions();toast('Usulan soal dihapus.');
+}
+function reviewQuestionSuggestion(id,approve){
+ let q=questionSuggestions.find(x=>String(x.id)===String(id));if(!q||q.status!=='pending')return;
+ if(approve){
+  if(!questions[q.level]){toast('Level soal tidak valid.');return;}
+  if(q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||q.options.some(x=>!String(x).trim()))){toast('Simpan edit dan lengkapi empat pilihan jawaban terlebih dahulu.');return;}
+  if(!q.question||!q.explain){toast('Pertanyaan dan pembahasan harus diisi.');return;}
+  if(q.type==='tf'){trueFalseQuestions[q.level].push([q.question,!!q.correct,q.explain]);saveTrueFalse();}
+  else{questions[q.level].push([q.question,q.options,q.correct,q.explain]);localStorage.setItem('kumbara_questions',JSON.stringify(questions));}
+  q.status='approved';q.reviewedAt=new Date().toISOString();localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));toast('Soal disetujui dan ditambahkan ke bank soal.');renderAdminQuestions();renderQuestionSuggestions();
+ }else{
+  if(!confirm('Tolak dan hapus usulan soal ini? Usulan akan dihapus permanen dari penyimpanan browser ini.'))return;
+  deleteQuestionSuggestion(id);
+ }
+}
 
 function downloadFeedback(){downloadFile('kumbara-feedback.json',JSON.stringify(feedbacks,null,2),'application/json')}
 function csvEscape(v){let s=String(v??'');return '"'+s.replace(/"/g,'""')+'"'}
