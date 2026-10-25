@@ -1,0 +1,25 @@
+KUMBARA — Paket awal integrasi Supabase
+
+File: KUMBARA_supabase_integrasi.html
+SQL: KUMBARA_supabase_schema.sql
+
+STATUS PENTING
+- Login admin demo diganti dengan Supabase Auth + pengecekan public.admin_users.
+- Website mencoba menyimpan hasil sesi dan feedback ke Supabase jika konfigurasi diisi.
+- Bank soal dan usulan soal masih memakai localStorage dalam versi ini; sinkronisasi bank soal ke database perlu tahap lanjutan setelah schema diterapkan.
+- File ini belum live/terhubung sampai URL, publishable key, database SQL, dan admin pertama dikonfigurasi.
+
+LANGKAH KONFIGURASI
+1. Buat project di https://supabase.com/ dan simpan URL project serta publishable key. Jangan gunakan service_role/secret key di browser.
+2. Buka SQL Editor, jalankan seluruh isi KUMBARA_supabase_schema.sql.
+3. Di Authentication > Users, buat user admin dengan email yang Anda kendalikan. Matikan public signups bila tidak diperlukan.
+4. Salin UUID user admin tersebut dan jalankan: insert into public.admin_users (user_id, role, active) values ('UUID_ADMIN_DI_SINI','admin',true);
+5. Buka HTML dengan editor teks, cari window.KUMBARA_SUPABASE_CONFIG lalu isi url dan anonKey/publishable key.
+6. Uji: login dengan akun admin terdaftar; akun non-admin harus ditolak. Pengunjung tetap dapat bermain tanpa login.
+7. Deploy HTML ke hosting statis gratis (misalnya Cloudflare Pages atau GitHub Pages). Upload file HTML sebagai index.html.
+
+BATASAN & KEAMANAN
+- Insert publik pada game_sessions dan feedbacks memang dibuka untuk pengalaman tanpa login; karena endpoint publik dapat disalahgunakan, sebelum penggunaan skala besar sebaiknya tambahkan rate limiting / Edge Function, validasi payload, dan CAPTCHA jika spam terjadi.
+- Admin role tidak boleh ditetapkan dari halaman publik. Buat peran pertama secara manual di SQL Editor.
+- RLS melindungi pembacaan laporan dan operasi admin, tetapi HTML ini adalah paket integrasi awal, bukan klaim bahwa semua fitur cloud sudah selesai.
+- Simpan cadangan SQL dan data berkala. Jangan pernah mengirim password atau secret key lewat chat.
