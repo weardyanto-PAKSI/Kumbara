@@ -31,6 +31,46 @@
 .winner-modal{position:relative;isolation:isolate;overflow:hidden;text-align:center;background:linear-gradient(155deg,#fffef4 0%,#f0fff4 52%,#fff5d8 100%);border:2px solid #f6d66b;box-shadow:0 24px 90px #0007}.winner-kicker{display:inline-block;background:#fff0ad;color:#76520a;border-radius:99px;padding:7px 13px;font-size:11px;font-weight:1000;letter-spacing:1.2px}.winner-heading{font-size:clamp(25px,5vw,36px);font-weight:1000;color:#14532d;margin:12px 0 6px!important;text-shadow:0 2px #fff}.winner-avatar{position:relative;z-index:1;width:112px;height:112px;display:grid;place-items:center;margin:12px auto 7px;border-radius:50%;font-size:72px;background:radial-gradient(circle,#fff 25%,#d9f99d 100%);border:5px solid #fff;box-shadow:0 0 0 3px #86c86a,0 10px 24px #285a2b22;animation:winnerBounce 1.3s ease-in-out infinite}.winner-name{font-size:clamp(22px,4vw,30px);font-weight:1000;color:#173d28;overflow-wrap:anywhere}.winner-congrats{font-size:clamp(21px,4.2vw,29px);font-weight:1000;color:#d97706;margin:9px 0 4px;text-shadow:0 1px #fff}.winner-copy{margin:4px 0 12px;line-height:1.6;font-weight:700}.winner-sound-note{font-size:12px;color:#64748b;margin:0 0 12px}.winner-fireworks{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:radial-gradient(circle at 12% 16%,#fbbf2430 0 3px,transparent 4px),radial-gradient(circle at 86% 19%,#fb718530 0 4px,transparent 5px),radial-gradient(circle at 18% 70%,#60a5fa35 0 3px,transparent 4px),radial-gradient(circle at 88% 73%,#a78bfa35 0 4px,transparent 5px)}.firework{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--spark,#f59e0b);box-shadow:0 0 0 0 var(--spark,#f59e0b);animation:fireworkBurst 1.5s ease-out infinite;opacity:0}.firework:nth-child(2n){animation-delay:.35s}.firework:nth-child(3n){animation-delay:.7s}.firework:nth-child(4n){animation-delay:1s}@keyframes fireworkBurst{0%{opacity:0;transform:scale(.2);box-shadow:0 0 0 0 var(--spark)}15%{opacity:1}75%{opacity:.9;box-shadow:0 -24px 0 -1px var(--spark),17px -17px 0 -1px var(--spark),24px 0 0 -1px var(--spark),17px 17px 0 -1px var(--spark),0 24px 0 -1px var(--spark),-17px 17px 0 -1px var(--spark),-24px 0 0 -1px var(--spark),-17px -17px 0 -1px var(--spark)}100%{opacity:0;transform:scale(1.1);box-shadow:0 -31px 0 -2px var(--spark),22px -22px 0 -2px var(--spark),31px 0 0 -2px var(--spark),22px 22px 0 -2px var(--spark),0 31px 0 -2px var(--spark),-22px 22px 0 -2px var(--spark),-31px 0 0 -2px var(--spark),-22px -22px 0 -2px var(--spark)}}@keyframes winnerBounce{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}@media(prefers-reduced-motion:reduce){.firework,.winner-avatar{animation:none}}
 
 </style>
+
+<style id="kumbara-contrast-board-fix">
+/* Kontras tinggi untuk petak misteri */
+.board .cell.mystery-cell{
+  background:linear-gradient(145deg,#172554 0%,#312e81 58%,#581c87 100%) !important;
+  outline:3px solid #facc15 !important; outline-offset:-2px;
+  box-shadow:inset 0 0 0 2px #ffffff, inset 0 0 0 5px #312e81;
+  color:#fff !important;
+}
+.board .cell.mystery-cell>span:first-child{
+  background:#facc15;color:#111827;border:1px solid #fff;border-radius:5px;
+  min-width:1.45em;text-align:center;padding:1px 3px;line-height:1.35;
+  box-shadow:0 1px 3px #0008;z-index:1;
+}
+.board .cell.mystery-cell .mark{
+  display:grid;place-items:center;min-width:1.55em;min-height:1.55em;
+  border-radius:50%;background:#facc15;color:#111827;
+  border:2px solid #fff;font-weight:1000;line-height:1;
+  text-shadow:none;filter:none;box-shadow:0 2px 4px #0008;
+}
+/* Bidak dibuat menonjol dari semua warna petak */
+.board .token.animal-token{
+  position:relative;isolation:isolate;
+  width:clamp(18px,2.6vw,29px);height:clamp(18px,2.6vw,29px);
+  border:2px solid #fff !important;
+  outline:2px solid #111827;
+  border-radius:9px 9px 12px 12px;
+  color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;
+  box-shadow:0 0 0 3px #ffffffd9,0 3px 0 #111827,0 5px 8px #0007;
+  background-image:linear-gradient(145deg,#ffffff55,#00000020);
+  background-color:var(--token-color,#111827);
+  font-size:clamp(12px,1.9vw,20px);
+}
+.board .tokens{z-index:3;gap:3px;padding:2px;align-items:center}
+@media(max-width:600px){
+ .board .token.animal-token{width:clamp(15px,3.5vw,22px);height:clamp(15px,3.5vw,22px);font-size:12px;outline-width:1.5px;box-shadow:0 0 0 2px #ffffffed,0 2px 0 #111827,0 3px 5px #0007}
+ .board .cell.mystery-cell .mark{min-width:1.35em;min-height:1.35em;border-width:1px}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap">
@@ -307,7 +347,7 @@ function chooseLevel(l){selectedLevel=l;document.querySelectorAll('.level').forE
 function renderPlayerSetup(){let n=+document.getElementById('playerCount').value, el=document.getElementById('playerSetup');el.innerHTML='';for(let i=0;i<n;i++){let d=document.createElement('div');d.className='player-row';d.innerHTML=`<div class="field" style="margin:0"><label>Nama pemain ${i+1}</label><input id="pn${i}" value="${i===0?'Pemain 1':i===1?'Pemain 2':'Pemain '+(i+1)}" maxlength="30"></div><div class="field" style="margin:0"><label>Jenis pemain</label><select id="pt${i}"><option value="human">Manusia</option><option value="ai">Komputer</option></select></div><div class="field" style="margin:0;grid-column:span 2"><label>Bidak kepala hewan</label><select id="pc${i}">${COLORS.map((c,j)=>`<option value="${j}" ${i===j?'selected':''}>${c.emoji} ${c.name}</option>`).join('')}</select></div>`;el.appendChild(d)}}
 function startGame(){if(gameOver&&!feedbackSubmittedThisGame){document.getElementById('feedbackSection').classList.remove('hidden');document.getElementById('feedbackSection').scrollIntoView({behavior:'smooth'});toast('Isi feedback akhir terlebih dahulu sebelum memulai permainan baru.');return}let n=+document.getElementById('playerCount').value;players=[];let used=[];for(let i=0;i<n;i++){let col=+document.getElementById('pc'+i).value;if(used.includes(col)){toast('Pilih warna bidak yang berbeda untuk setiap pemain.');return}used.push(col);players.push({name:document.getElementById('pn'+i).value.trim()||'Pemain '+(i+1),type:document.getElementById('pt'+i).value,color:col,pos:1,done:false})}document.body.classList.remove('feedback-mode');gameMode=document.getElementById('gameMode').value;boardSize=gameMode==='quick'?64:100;makeRandomBoard();current=0;asked=correct=special=0;extraSixCount=0;gameOver=false;feedbackSubmittedThisGame=false;document.getElementById('home').classList.add('hidden');document.getElementById('game').classList.remove('hidden');document.getElementById('feedbackSection').classList.add('hidden');document.getElementById('dice').textContent='🎲';renderBoard();renderPlayers();updateTurn();maybeAI()}
 function renderBoard(){let caption=document.getElementById('boardCaption');if(caption)caption.textContent=boardSize===64?'⚡ Mode Cepat 8×8 — 🐍 6 ular · 🪜 6 tangga · ❔ 3 petak misteri':'🎲 Mode Klasik 10×10 — 🐍 12 ular · 🪜 12 tangga · ❔ 6 petak misteri';let el=document.getElementById('board');el.style.gridTemplateColumns=`repeat(${boardSize===64?8:10},minmax(0,1fr))`;el.innerHTML='';let nums=[];const width=boardSize===64?8:10;for(let r=0;r<Math.ceil(boardSize/width);r++){let row=[];for(let c=0;c<width;c++){let v=r*width+c+1;if(v<=boardSize)row.push(v)}if(r%2===1)row.reverse();nums.push(...row)}nums.reverse();for(let p of nums){let cell=document.createElement('div');cell.className='cell';cell.id='cell'+p;let mark='';if(ladders[p]){cell.classList.add('special-ladder');mark='🪜'}if(snakes[p]){cell.classList.add('special-snake');mark='🐍'}if(mysterySquares.includes(p)){cell.classList.add('mystery-cell');mark='❔'}if(p===boardSize){cell.classList.add('finish');mark='🏆'}cell.innerHTML=`<span>${p}</span><span class="mark">${mark}</span><div class="tokens" id="tokens${p}"></div>`;el.appendChild(cell)}renderTokens()}
-function renderTokens(){document.querySelectorAll('.tokens').forEach(x=>x.innerHTML='');players.forEach((p,i)=>{let t=document.getElementById('tokens'+p.pos);if(t){let dot=document.createElement('span');dot.className='token animal-token';dot.style.background=COLORS[p.color].hex;dot.textContent=COLORS[p.color].emoji;dot.title=p.name;t.appendChild(dot)}})}
+function renderTokens(){document.querySelectorAll('.tokens').forEach(x=>x.innerHTML='');players.forEach((p,i)=>{let t=document.getElementById('tokens'+p.pos);if(t){let dot=document.createElement('span');dot.className='token animal-token';dot.style.background=COLORS[p.color].hex;dot.style.setProperty('--token-color',COLORS[p.color].hex);dot.textContent=COLORS[p.color].emoji;dot.title=p.name;t.appendChild(dot)}})}
 function renderPlayers(){document.getElementById('playerList').innerHTML=players.map((p,i)=>`<div class="player-item ${i===current?'current':''}"><span class="dot" style="background:${COLORS[p.color].hex}"></span><strong>${esc(p.name)}</strong><small>${p.type==='ai'?'🤖 Komputer':'🧑 Pemain'}</small><span>${p.pos}</span></div>`).join('');document.getElementById('statAsked').textContent=asked;document.getElementById('statCorrect').textContent=correct;document.getElementById('statSpecial').textContent=special}
 function updateTurn(){if(!players.length)return;let p=players[current];document.getElementById('turnName').textContent=p.name;document.getElementById('turnHint').textContent=p.type==='ai'?'Komputer sedang bersiap…':'Giliranmu! Lempar dadu untuk melangkah.';document.getElementById('rollBtn').disabled=p.type==='ai'||gameOver;document.getElementById('rollBtn').style.opacity=p.type==='ai'?.6:1;renderPlayers()}
 function rollDice(){if(gameOver||players[current].type==='ai')return;doRoll(false)}
