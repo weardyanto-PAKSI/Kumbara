@@ -334,13 +334,19 @@ body.admin-mode #admin .section-title{position:sticky;top:0;z-index:20;backgroun
 <div class="footer">Dikembangkan oleh <strong>@wea_aew</strong> · KUMBARA — Karakter Utuh, Mandiri, Berani, Adil, Rajin, dan Amanah<br>Belajar integritas dimulai dari pilihan kecil setiap hari. <span style="display:block;margin-top:8px"><button class="ghost" style="padding:7px 10px;font-size:11px" onclick="showAdmin()">Login admin</button></span></div>
 </div>
 
-<div class="overlay" id="adminLoginOverlay"><div class="modal"><div class="pill">🔐 AKSES KHUSUS</div><h2>Login Admin KUMBARA</h2><p class="small">Masuk untuk mengelola bank soal dan membaca hasil feedback.</p><form onsubmit="adminLogin(event)"><div class="field"><label for="adminUsername">Nama pengguna</label><input id="adminUsername" autocomplete="username" required value="admin"></div><div class="field"><label for="adminPassword">Kata sandi</label><input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Masukkan kata sandi"></div><p id="adminLoginError" class="feedback bad hidden">Menunggu.</p><button class="primary" style="width:100%" type="submit">Masuk</button><button class="ghost" style="width:100%;margin-top:8px" type="button" onclick="closeAdminLogin()">Batal</button></form><p class="small" style="margin-top:12px">Gunakan User Name dan Kata Sandi yang terdaftar sebagai admin.</p></div></div>
+<div class="overlay" id="adminLoginOverlay"><div class="modal"><div class="pill">🔐 AKSES KHUSUS</div><h2>Login Admin KUMBARA</h2><p class="small">Masuk untuk mengelola bank soal dan membaca hasil feedback.</p><form onsubmit="adminLogin(event)"><div class="field"><label for="adminUsername">Email akun admin Supabase</label><input id="adminUsername" type="email" autocomplete="username" required placeholder="nama@email.com"></div><div class="field"><label for="adminPassword">Kata sandi</label><input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Masukkan kata sandi"></div><p id="adminLoginError" class="feedback bad hidden">Menunggu.</p><button class="primary" style="width:100%" type="submit">Masuk</button><button class="ghost" style="width:100%;margin-top:8px" type="button" onclick="closeAdminLogin()">Batal</button></form><p class="small" style="margin-top:12px">Masuk menggunakan email dan kata sandi akun yang dibuat di Supabase Authentication.</p></div></div>
 <div class="overlay dice-overlay" id="diceOverlay"><div class="dice-modal"><div class="pill">🎲 MOMEN PENENTUAN</div><div id="dicePopPlayer" class="dice-pop-player">🎮 Giliran pemain</div><h2 id="dicePopTitle">Lempar dadu!</h2><div class="dice3d-stage"><div id="dice3d" class="dice3d">⚄</div></div><div id="dicePopResult" class="dice-pop-result">Semoga beruntung!</div><button id="manualMysteryRoll" class="primary" type="button" onclick="confirmMysteryRoll()">🎲 Lempar dadu misteri</button></div></div>
 <div class="overlay" id="quizOverlay"><div class="modal"><div class="pill" id="quizBadge">TANTANGAN INTEGRITAS</div><h2 id="quizTitle">Pertanyaan untukmu!</h2><div id="quizRoute" class="notice" style="margin:10px 0 12px;font-weight:800"></div><div id="quizQuestion" class="question"></div><div class="timer-wrap"><div class="timer-line"><span>⏱️ Waktu menjawab</span><strong id="quizTimer">15</strong><span>detik</span></div><div class="timer-track"><div id="quizTimerBar" class="timer-bar"></div></div></div><div id="quizAnswers" class="answer-list"></div><div id="quizFeedback" class="feedback hidden"></div><button id="quizContinue" class="primary hidden" style="width:100%" onclick="finishQuiz()">Lanjutkan petualangan →</button><p class="small">Ingat: setiap tantangan adalah kesempatan belajar, bukan untuk mempermalukan.</p></div></div>
 <div class="overlay" id="howOverlay"><div class="modal"><h2>📖 Aturan KUMBARA</h2><ol style="line-height:1.8"><li>Setiap pemain bergiliran melempar dadu.</li><li>Bidak maju sesuai angka dadu. Untuk menang, pemain harus mencapai petak terakhir; angka yang melebihi sisa petak tidak menggerakkan bidak.</li><li>Jika mendarat di petak ❔, lempar dadu khusus: angka ganjil menjadi tangga dan angka genap menjadi ular. Setelah itu jawab kuis.</li><li>Jika mendarat di petak tangga, jawab kuis: benar = naik; salah = tetap di petak itu.</li><li>Jika mendarat di petak ular, jawab kuis: benar = selamat; salah = turun.</li><li>Jika mendapat angka 6, pemain mendapat giliran tambahan. Maksimal 2 kali tambahan dalam satu rangkaian giliran; angka 6 pada lemparan ketiga tidak memberi tambahan lagi.</li><li>Jika berada di petak 95–99 (klasik) atau 59–63 (cepat) dan dadu melewati petak akhir, bidak maju sampai garis finis lalu mundur sebanyak langkah yang berlebih. Contoh: dari 97 mendapat 4, maju ke 100 lalu mundur 1 petak ke 99.</li><li>Pemain komputer menjalankan giliran otomatis dan menjawab berdasarkan simulasi akurasi.</li><li>Di akhir permainan, pemain dapat mengisi evaluasi kualitas permainan, desain, soal, kemudahan, dan saran.</li></ol><button class="primary" style="width:100%" onclick="closeHow()">Mengerti!</button></div></div>
 <div class="overlay" id="endOverlay"><div class="modal winner-modal"><div class="winner-fireworks" id="winnerFireworks" aria-hidden="true"></div><div class="winner-kicker">🏆 HASIL AKHIR PETUALANGAN</div><h2 class="winner-heading">PEMENANG KUMBARA!</h2><div class="winner-avatar" id="winnerAvatar">🐼</div><div class="winner-name" id="winnerName">Nama Pemain</div><div class="winner-congrats">🎉 SELAMAT! 🎉</div><p id="winnerText" class="winner-copy"></p><div class="feedback good"><strong>Pesan integritas:</strong> kemenangan terbaik adalah tetap jujur, adil, dan bertanggung jawab, baik saat bermain maupun dalam kehidupan sehari-hari.</div><div class="winner-sound-note">🎆 Perayaan kemenangan dengan kembang api dan suara</div><button class="primary" style="width:100%" onclick="closeEnd()">💌 Isi feedback sekarang</button></div></div>
 <div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
+// Koneksi Supabase KUMBARA. Publishable key aman untuk frontend jika RLS diaktifkan.
+const SUPABASE_URL = 'https://bwllhfivdsemiwdjdyew.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_oMHyC5pEF8hr-4FPvrMhaQ_z0qTlvdj';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const COLORS=[{name:'Rubah',hex:'#f97316',emoji:'🦊'},{name:'Panda',hex:'#334155',emoji:'🐼'},{name:'Harimau',hex:'#eab308',emoji:'🐯'},{name:'Katak',hex:'#22c55e',emoji:'🐸'},{name:'Kelinci',hex:'#ec4899',emoji:'🐰'},{name:'Beruang',hex:'#92400e',emoji:'🐻'},{name:'Koala',hex:'#64748b',emoji:'🐨'},{name:'Singa',hex:'#d97706',emoji:'🦁'},{name:'Penguin',hex:'#0ea5e9',emoji:'🐧'},{name:'Monyet',hex:'#a16207',emoji:'🐵'}];
 const LEVELS={sd13:'Kelas 1–3 SD',sd46:'Kelas 4–6 SD',smp:'SMP',sma:'SMA sederajat'};
 const DEFAULT_TRUE_FALSE={
@@ -658,9 +664,44 @@ function clearFeedback(){if(confirm('Hapus seluruh feedback lokal pada perangkat
 function resetQuestions(){if(confirm('Pulihkan bank soal bawaan? Soal tambahan dan perubahan lokal akan hilang.')){questions=JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));trueFalseQuestions=JSON.parse(JSON.stringify(DEFAULT_TRUE_FALSE));normalizeTrueFalseBank();saveQuestions();cancelEditQuestion();renderAdminQuestions();renderTrueFalseAdmin();toast('Bank soal bawaan dipulihkan.')}}
 function adminTab(t,b){document.querySelectorAll('#admin .tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');['questions','feedback','settings'].forEach(k=>document.getElementById('admin'+k[0].toUpperCase()+k.slice(1)).classList.toggle('hidden',k!==t));if(t==='feedback')renderAdminFeedback()}
 function showAdmin(){document.getElementById('adminLoginOverlay').classList.add('show');document.getElementById('adminLoginError').classList.add('hidden');document.getElementById('adminUsername').focus()}
-function adminLogin(e){e.preventDefault();let u=document.getElementById('adminUsername').value.trim(),p=document.getElementById('adminPassword').value;if(u==='admin'&&p==='KUMBARA2026'){adminAuthenticated=true;document.getElementById('adminLoginOverlay').classList.remove('show');document.getElementById('adminPassword').value='';document.body.classList.add('admin-mode');document.getElementById('admin').classList.remove('hidden');renderAdminQuestions();renderTrueFalseAdmin();renderAdminFeedback();adminQuestionType('mc',document.querySelector('.question-type-tabs .tab'));window.scrollTo({top:0,behavior:'instant'});toast('Berhasil masuk ke halaman panel admin.')}else{document.getElementById('adminLoginError').classList.remove('hidden');document.getElementById('adminPassword').value=''}}
+async function adminLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('adminUsername').value.trim();
+  const password=document.getElementById('adminPassword').value;
+  const errorEl=document.getElementById('adminLoginError');
+  errorEl.textContent='Memverifikasi akun Supabase…';
+  errorEl.classList.remove('hidden');
+  try{
+    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    if(!data.user){throw new Error('Akun tidak berhasil diverifikasi.');}
+    adminAuthenticated=true;
+    document.getElementById('adminLoginOverlay').classList.remove('show');
+    document.getElementById('adminPassword').value='';
+    errorEl.classList.add('hidden');
+    document.body.classList.add('admin-mode');
+    document.getElementById('admin').classList.remove('hidden');
+    renderAdminQuestions();renderTrueFalseAdmin();renderAdminFeedback();
+    adminQuestionType('mc',document.querySelector('.question-type-tabs .tab'));
+    window.scrollTo({top:0,behavior:'instant'});
+    toast('Berhasil masuk menggunakan akun Supabase.');
+  }catch(err){
+    console.error('Login Supabase gagal:',err);
+    errorEl.textContent='Login gagal. Periksa email/kata sandi dan pastikan akun tersedia di Supabase Authentication.';
+    errorEl.classList.remove('hidden');
+    document.getElementById('adminPassword').value='';
+  }
+}
 function closeAdminLogin(){document.getElementById('adminLoginOverlay').classList.remove('show')}
-function adminLogout(){adminAuthenticated=false;document.body.classList.remove('admin-mode');document.getElementById('admin').classList.add('hidden');toast('Anda telah keluar dari panel admin dan kembali ke beranda.');window.scrollTo({top:0,behavior:'instant'})}
+async function adminLogout(){
+  try{await supabaseClient.auth.signOut();}
+  catch(err){console.error('Logout Supabase:',err);}
+  adminAuthenticated=false;
+  document.body.classList.remove('admin-mode');
+  document.getElementById('admin').classList.add('hidden');
+  toast('Anda telah keluar dari panel admin dan kembali ke beranda.');
+  window.scrollTo({top:0,behavior:'instant'});
+}
 function hideAdmin(){adminLogout()}
 function showHow(){document.getElementById('howOverlay').classList.add('show')}function closeHow(){document.getElementById('howOverlay').classList.remove('show')}
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
