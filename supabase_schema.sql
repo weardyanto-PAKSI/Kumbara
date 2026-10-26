@@ -1,104 +1,66 @@
--- KUMBARA Supabase schema (jalankan di SQL Editor project Supabase)
-create extension if not exists pgcrypto;
+-- Skema penyimpanan cloud KUMBARA
+-- Jalankan sekali di Supabase Dashboard > SQL Editor.
 
-create table if not exists public.admin_users (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  role text not null default 'admin' check (role in ('admin')),
-  active boolean not null default true,
+create table if not exists public.kumbara_question_banks (
+  id text primary key,
+  data jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.kumbara_feedback (
+  id bigint primary key,
+  data jsonb not null,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.questions (
-  id uuid primary key default gen_random_uuid(),
-  level text not null check (level in ('sd13','sd46','smp','sma')),
-  question_type text not null check (question_type in ('mc','tf')),
-  question text not null,
-  options jsonb,
-  correct_answer jsonb not null,
-  explanation text not null default '',
-  active boolean not null default true,
-  created_by uuid references auth.users(id),
-  updated_at timestamptz not null default now(),
+create table if not exists public.kumbara_question_suggestions (
+  id bigint primary key,
+  data jsonb not null,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.game_sessions (
-  id uuid primary key default gen_random_uuid(),
-  game_mode text not null check (game_mode in ('classic','quick')),
-  level text not null check (level in ('sd13','sd46','smp','sma')),
-  winner_name text,
-  players jsonb not null default '[]'::jsonb,
-  questions_asked integer not null default 0 check (questions_asked >= 0),
-  answers_correct integer not null default 0 check (answers_correct >= 0),
-  special_cells integer not null default 0 check (special_cells >= 0),
-  created_at timestamptz not null default now()
-);
+alter table public.kumbara_question_banks enable row level security;
+alter table public.kumbara_feedback enable row level security;
+alter table public.kumbara_question_suggestions enable row level security;
 
-create table if not exists public.feedbacks (
-  id uuid primary key default gen_random_uuid(),
-  participant_name text not null check (char_length(participant_name) between 1 and 80),
-  level text not null check (level in ('sd13','sd46','smp','sma')),
-  game_rating smallint not null check (game_rating between 1 and 5),
-  design_rating smallint not null check (design_rating between 1 and 5),
-  learning_rating smallint not null check (learning_rating between 1 and 5),
-  ease_rating smallint not null check (ease_rating between 1 and 5),
-  suggestion text not null default '',
-  question_suggestion jsonb,
-  created_at timestamptz not null default now()
-);
+-- Semua pengunjung boleh membaca bank soal untuk memainkan game.
+drop policy if exists "Public can read KUMBARA question banks" on public.kumbara_question_banks;
+create policy "Public can read KUMBARA question banks"
+  on public.kumbara_question_banks for select to anon, authenticated using (true);
 
-create table if not exists public.audit_logs (
-  id bigint generated always as identity primary key,
-  actor uuid references auth.users(id),
-  action text not null,
-  table_name text not null,
-  record_id text,
-  details jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
+-- Hanya akun yang login melalui Supabase Auth boleh mengubah bank soal.
+drop policy if exists "Authenticated users manage KUMBARA question banks" on public.kumbara_question_banks;
+create policy "Authenticated users manage KUMBARA question banks"
+  on public.kumbara_question_banks for all to authenticated using (true) with check (true);
 
-alter table public.admin_users enable row level security;
-alter table public.questions enable row level security;
-alter table public.game_sessions enable row level security;
-alter table public.feedbacks enable row level security;
-alter table public.audit_logs enable row level security;
+-- Pemain tanpa login boleh mengirim feedback; hanya akun login boleh membaca/mengelola feedback.
+drop policy if exists "Public can submit KUMBARA feedback" on public.kumbara_feedback;
+create policy "Public can submit KUMBARA feedback"
+  on public.kumbara_feedback for insert to anon, authenticated with check (true);
+drop policy if exists "Authenticated users read KUMBARA feedback" on public.kumbara_feedback;
+create policy "Authenticated users read KUMBARA feedback"
+  on public.kumbara_feedback for select to authenticated using (true);
+drop policy if exists "Authenticated users delete KUMBARA feedback" on public.kumbara_feedback;
+create policy "Authenticated users delete KUMBARA feedback"
+  on public.kumbara_feedback for delete to authenticated using (true);
 
--- Role checker: only active admin accounts.
-create or replace function public.is_kumbara_admin()
-returns boolean language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from public.admin_users a
-    where a.user_id = (select auth.uid()) and a.role = 'admin' and a.active = true
-  );
-$$;
-revoke all on function public.is_kumbara_admin() from public;
-grant execute on function public.is_kumbara_admin() to authenticated;
+-- Pemain boleh mengirim usulan; hanya akun login boleh membaca, menyetujui, menolak, atau menghapusnya.
+drop policy if exists "Public can submit KUMBARA suggestions" on public.kumbara_question_suggestions;
+create policy "Public can submit KUMBARA suggestions"
+  on public.kumbara_question_suggestions for insert to anon, authenticated with check (true);
+drop policy if exists "Authenticated users read KUMBARA suggestions" on public.kumbara_question_suggestions;
+create policy "Authenticated users read KUMBARA suggestions"
+  on public.kumbara_question_suggestions for select to authenticated using (true);
+drop policy if exists "Authenticated users update KUMBARA suggestions" on public.kumbara_question_suggestions;
+create policy "Authenticated users update KUMBARA suggestions"
+  on public.kumbara_question_suggestions for update to authenticated using (true) with check (true);
+drop policy if exists "Authenticated users delete KUMBARA suggestions" on public.kumbara_question_suggestions;
+create policy "Authenticated users delete KUMBARA suggestions"
+  on public.kumbara_question_suggestions for delete to authenticated using (true);
 
--- Admin-only role list access. Never allow public role assignment.
-drop policy if exists "admin can read own role" on public.admin_users;
-create policy "admin can read own role" on public.admin_users for select to authenticated using (user_id = (select auth.uid()) and public.is_kumbara_admin());
-drop policy if exists "admins manage questions" on public.questions;
-create policy "public reads active questions" on public.questions for select to anon, authenticated using (active = true);
-create policy "admins manage questions" on public.questions for all to authenticated using (public.is_kumbara_admin()) with check (public.is_kumbara_admin());
-drop policy if exists "public can submit game sessions" on public.game_sessions;
-create policy "public can submit game sessions" on public.game_sessions for insert to anon, authenticated with check (true);
-drop policy if exists "admins read game sessions" on public.game_sessions;
-create policy "admins read game sessions" on public.game_sessions for select to authenticated using (public.is_kumbara_admin());
-drop policy if exists "public can submit feedback" on public.feedbacks;
-create policy "public can submit feedback" on public.feedbacks for insert to anon, authenticated with check (true);
-drop policy if exists "admins read feedback" on public.feedbacks;
-create policy "admins read feedback" on public.feedbacks for select to authenticated using (public.is_kumbara_admin());
-drop policy if exists "admins read audit logs" on public.audit_logs;
-create policy "admins read audit logs" on public.audit_logs for select to authenticated using (public.is_kumbara_admin());
-drop policy if exists "admins insert audit logs" on public.audit_logs;
-create policy "admins insert audit logs" on public.audit_logs for insert to authenticated with check (public.is_kumbara_admin() and actor = (select auth.uid()));
-
-grant select on public.questions to anon, authenticated;
-grant insert on public.game_sessions, public.feedbacks to anon, authenticated;
-grant select on public.game_sessions, public.feedbacks, public.audit_logs to authenticated;
-grant select on public.admin_users to authenticated;
-grant insert, update, delete on public.questions to authenticated;
-
--- IMPORTANT: after creating the first user in Authentication, insert that UUID here manually:
--- insert into public.admin_users (user_id, role, active) values ('AUTH_USER_UUID', 'admin', true);
--- Do not create an open public registration flow for admin accounts.
+grant select on public.kumbara_question_banks to anon, authenticated;
+grant insert, select, update, delete on public.kumbara_question_banks to authenticated;
+grant insert on public.kumbara_feedback to anon, authenticated;
+grant select, delete on public.kumbara_feedback to authenticated;
+grant insert on public.kumbara_question_suggestions to anon, authenticated;
+grant select, update, delete on public.kumbara_question_suggestions to authenticated;

@@ -519,7 +519,10 @@ function makeRandomBoard(){const finish=boardSize, count=gameMode==='quick'?6:12
 
 function nextQuizQuestion(){quizType=(trueFalseQuestions[selectedLevel]?.length&&Math.random()<.35)?'tf':'mc';if(quizType==='tf'){let list=trueFalseQuestions[selectedLevel]||[];if(!trueFalseDeck.length)trueFalseDeck=shuffled(list.map((q,i)=>({q,index:i})));let e=trueFalseDeck.pop();return [e.q[0],['Benar','Salah'],e.q[1]?0:1,e.q[2], 'tf'];}let list=questions[selectedLevel]||[];if(!list.length)return ['Belum ada soal untuk level ini. Silakan admin menambahkan soal.',['Lanjut','Kembali','Minta bantuan','Lewati'],0,'Bank soal level ini masih kosong.'];if(!questionDeck.length)questionDeck=shuffled(list.map((q,i)=>({q,index:i})));let entry=questionDeck.pop();return [...entry.q,'mc'];}
 
-function saveQuestions(){localStorage.setItem('kumbara_questions',JSON.stringify(questions))}
+function saveQuestions(){
+ localStorage.setItem('kumbara_questions',JSON.stringify(questions));
+ supabaseSaveBank('mc',questions);
+}
 function chooseLevel(l){selectedLevel=l;document.querySelectorAll('.level').forEach(x=>x.classList.toggle('active',x.dataset.level===l));document.getElementById('levelLabel').textContent=LEVELS[l];document.getElementById('fbLevel').value=LEVELS[l]}
 function renderPlayerSetup(){let n=+document.getElementById('playerCount').value, el=document.getElementById('playerSetup');el.innerHTML='';for(let i=0;i<n;i++){let d=document.createElement('div');d.className='player-row';d.innerHTML=`<div class="field" style="margin:0"><label>Nama pemain ${i+1}</label><input id="pn${i}" value="${i===0?'Pemain 1':i===1?'Pemain 2':'Pemain '+(i+1)}" maxlength="30"></div><div class="field" style="margin:0"><label>Jenis pemain</label><select id="pt${i}"><option value="human">Manusia</option><option value="ai">Komputer</option></select></div><div class="field" style="margin:0;grid-column:span 2"><label>Bidak kepala hewan</label><select id="pc${i}">${COLORS.map((c,j)=>`<option value="${j}" ${i===j?'selected':''}>${c.emoji} ${c.name}</option>`).join('')}</select></div>`;el.appendChild(d)}}
 let boardZoomPercent=100;
@@ -571,7 +574,7 @@ function newGame(){if(gameOver&&!feedbackSubmittedThisGame){closeEnd();toast('Fe
 function backHome(){if('speechSynthesis'in window)window.speechSynthesis.cancel();if(gameOver&&!feedbackSubmittedThisGame){closeEnd();toast('Selesaikan feedback sebelum kembali ke beranda.');return}if(confirm('Keluar dari permainan saat ini? Progres sesi ini akan berakhir.')){document.getElementById('game').classList.add('hidden');document.getElementById('home').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}}
 function toggleQuestionSuggestion(){let yes=document.getElementById('fbAddQuestion').value==='yes';document.getElementById('fbQuestionFields').classList.toggle('hidden',!yes);['fbQText','fbQExplain'].forEach(id=>document.getElementById(id).required=yes);toggleSuggestionType();}
 function toggleSuggestionType(){const mc=document.getElementById('fbQType')?.value==='mc',mcBox=document.getElementById('fbMCFields'),tfBox=document.getElementById('fbTFFields'),correct=document.getElementById('fbQCorrect'),opts=document.getElementById('fbQOptions');if(mcBox)mcBox.classList.toggle('hidden',!mc);if(tfBox)tfBox.classList.toggle('hidden',mc);if(opts)opts.required=mc;if(correct){correct.required=mc;correct.closest('.field')?.classList.toggle('hidden',!mc)}}
-function submitFeedback(e){
+async function submitFeedback(e){
  e.preventDefault();
  const form=document.getElementById('feedbackForm'),btn=form?.querySelector('button[type="submit"]'),done=document.getElementById('fbDone');
  if(!form||!form.reportValidity())return;
@@ -589,19 +592,19 @@ function submitFeedback(e){
    }else q={id:Date.now()+Math.floor(Math.random()*1000),name:document.getElementById('fbName').value.trim(),level:document.getElementById('fbQLevel').value,type:'tf',question:qtext,correct:document.getElementById('fbTFAnswer').value==='true',explain:ex,createdAt:new Date().toISOString(),status:'pending'};
   }
   const item={id:Date.now(),name:document.getElementById('fbName').value.trim(),level:document.getElementById('fbLevel').value||LEVELS[selectedLevel],game:+document.getElementById('fbGame').value,design:+document.getElementById('fbDesign').value,learning:+document.getElementById('fbLearning').value,ease:+document.getElementById('fbEase').value,suggestion:document.getElementById('fbSuggestion').value.trim(),questionProposal:addQuestion?'Ya':'Tidak',createdAt:new Date().toISOString()};
-  // Read-modify-write avoids replacing records created earlier in this browser.
-  const oldFeedback=JSON.parse(localStorage.getItem('kumbara_feedback')||'[]');
-  oldFeedback.push(item);localStorage.setItem('kumbara_feedback',JSON.stringify(oldFeedback));feedbacks=oldFeedback;
-  if(q){const oldSuggestions=JSON.parse(localStorage.getItem('kumbara_question_suggestions')||'[]');oldSuggestions.push(q);localStorage.setItem('kumbara_question_suggestions',JSON.stringify(oldSuggestions));questionSuggestions=oldSuggestions;}
+  // Simpan ke Supabase terlebih dahulu agar feedback benar-benar tersimpan online.
+  await supabaseInsertFeedback(item);
+  feedbacks.push(item);localStorage.setItem('kumbara_feedback',JSON.stringify(feedbacks));
+  if(q){await supabaseInsertSuggestion(q);questionSuggestions.push(q);localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));}
   feedbackSubmittedThisGame=true;done.className='feedback good';
-  done.innerHTML='Terima kasih, <strong>'+esc(item.name)+'</strong>! Feedback berhasil disimpan pada browser ini.'+(addQuestion?'<p>📝 Usulan soal sudah disimpan dan menunggu pemeriksaan admin pada perangkat ini.</p>':'')+'<p>Beranda akan dibuka kembali sebentar lagi.</p>';
+  done.innerHTML='Terima kasih, <strong>'+esc(item.name)+'</strong>! Feedback berhasil disimpan ke database Supabase.'+(addQuestion?'<p>📝 Usulan soal tersimpan online dan menunggu pemeriksaan admin.</p>':'')+'<p>Beranda akan dibuka kembali sebentar lagi.</p>';
   form.reset();toggleQuestionSuggestion();document.getElementById('fbLevel').value=LEVELS[selectedLevel];toast('Feedback berhasil disimpan. Kembali ke beranda…');
   setTimeout(()=>{document.body.classList.remove('feedback-mode');document.getElementById('feedbackSection').classList.add('hidden');document.getElementById('game').classList.add('hidden');document.getElementById('endOverlay').classList.remove('show');document.getElementById('home').classList.remove('hidden');done.classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'});if(btn){btn.disabled=false;btn.textContent='💚 Kirim feedback hingga selesai'}},1800);
  }catch(err){console.error('KUMBARA feedback submit:',err);done.className='feedback bad';done.textContent='Feedback belum berhasil disimpan. '+(err&&err.message?err.message:'Periksa koneksi/penyimpanan browser, lalu coba lagi.');done.classList.remove('hidden');toast('Feedback gagal disimpan. Periksa pesan pada formulir.');if(btn){btn.disabled=false;btn.textContent='💚 Coba kirim feedback lagi'}}
 }
 
 function renderQuestionSuggestions(){let el=document.getElementById('questionSuggestionList');if(!el)return;el.innerHTML=questionSuggestions.length?questionSuggestions.slice().reverse().map(q=>`<article class="admin-question"><strong>${esc(q.question)}</strong><p class="small">Pengusul: ${esc(q.name)} · Level: ${esc(LEVELS[q.level]||q.level)} · Status: <strong>${q.status==='pending'?'Menunggu persetujuan':q.status==='approved'?'Disetujui':'Ditolak'}</strong></p><p>${q.type==='tf'?'Jenis: Benar/Salah':q.options.map((o,i)=>String.fromCharCode(65+i)+'. '+esc(o)).join('<br>')}</p><p class="small">Jawaban yang diusulkan: ${esc(q.type==='tf'?(q.correct?'Benar':'Salah'):(q.options[q.correct]||'—'))}<br>Pembahasan: ${esc(q.explain)}</p>${q.status==='pending'?`<div class="admin-actions"><button class="primary" onclick="reviewQuestionSuggestion(${q.id},true)">✅ Setujui & tambahkan</button><button class="danger" onclick="reviewQuestionSuggestion(${q.id},false)">Tolak</button></div>`:''}</article>`).join(''):'<p class="notice">Belum ada usulan soal dari pemain.</p>'}
-function reviewQuestionSuggestion(id,approve){let q=questionSuggestions.find(x=>x.id===id);if(!q||q.status!=='pending')return;if(approve){if(!questions[q.level]){toast('Level soal tidak valid.');return}if(q.type==='tf'){trueFalseQuestions[q.level].push([q.question,!!q.correct,q.explain]);saveTrueFalse();}else{questions[q.level].push([q.question,q.options,q.correct,q.explain]);localStorage.setItem('kumbara_questions',JSON.stringify(questions));}q.status='approved';toast('Soal disetujui dan ditambahkan ke bank soal.');renderAdminQuestions()}else{questionSuggestions=questionSuggestions.filter(x=>x.id!==id);toast('Usulan soal ditolak dan otomatis dihapus dari daftar.')}localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));renderQuestionSuggestions()}
+async function reviewQuestionSuggestion(id,approve){let q=questionSuggestions.find(x=>x.id===id);if(!q||q.status!=='pending')return;try{if(approve){if(!questions[q.level]){toast('Level soal tidak valid.');return}if(q.type==='tf'){trueFalseQuestions[q.level].push([q.question,!!q.correct,q.explain]);saveTrueFalse();}else{questions[q.level].push([q.question,q.options,q.correct,q.explain]);saveQuestions();}q.status='approved';await supabaseUpdateSuggestion(q);toast('Soal disetujui dan ditambahkan ke bank soal online.');renderAdminQuestions()}else{await supabaseDeleteSuggestion(id);questionSuggestions=questionSuggestions.filter(x=>x.id!==id);toast('Usulan soal ditolak dan dihapus dari daftar online.')}localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));renderQuestionSuggestions()}catch(err){console.error(err);toast('Gagal menyimpan perubahan ke Supabase. Periksa koneksi dan izin tabel.')}}
 
 function downloadFeedback(){downloadFile('kumbara-feedback.json',JSON.stringify(feedbacks,null,2),'application/json')}
 function csvEscape(v){let s=String(v??'');return '"'+s.replace(/"/g,'""')+'"'}
@@ -614,10 +617,13 @@ function exportQuestions(){downloadFile('kumbara-bank-soal.json',JSON.stringify(
 function addQuestion(){let level=document.getElementById('aqLevel').value,q=document.getElementById('aqQuestion').value.trim(),opts=document.getElementById('aqOptions').value.split('|').map(x=>x.trim()).filter(Boolean),correct=+document.getElementById('aqCorrect').value,ex=document.getElementById('aqExplain').value.trim();if(!q||opts.length!==4||!ex){toast('Isi pertanyaan, tepat 4 pilihan dipisahkan tanda |, dan pembahasan.');return}if(editingQuestion){let old=editingQuestion;if(old.level!==level){questions[old.level].splice(old.index,1);questions[level].push([q,opts,correct,ex])}else questions[level][old.index]=[q,opts,correct,ex];toast('Perubahan soal berhasil disimpan.')}else{questions[level].push([q,opts,correct,ex]);toast('Soal berhasil ditambahkan.')}saveQuestions();cancelEditQuestion();renderAdminQuestions()}
 function editQuestion(level,index){let q=questions[level][index];if(!q)return;editingQuestion={level,index};document.getElementById('aqLevel').value=level;document.getElementById('aqQuestion').value=q[0];document.getElementById('aqOptions').value=q[1].join(' | ');document.getElementById('aqCorrect').value=q[2];document.getElementById('aqExplain').value=q[3]||'';document.getElementById('questionFormTitle').textContent='Edit soal';document.getElementById('aqSaveBtn').textContent='Simpan perubahan';document.getElementById('aqCancelBtn').classList.remove('hidden');document.getElementById('aqQuestion').scrollIntoView({behavior:'smooth',block:'center'})}
 function cancelEditQuestion(){editingQuestion=null;document.getElementById('aqQuestion').value='';document.getElementById('aqOptions').value='';document.getElementById('aqCorrect').value='0';document.getElementById('aqExplain').value='';document.getElementById('questionFormTitle').textContent='Tambah soal baru';document.getElementById('aqSaveBtn').textContent='＋ Tambah soal';document.getElementById('aqCancelBtn').classList.add('hidden')}
-function deleteQuestion(level,index){if(!confirm('Hapus soal ini dari level '+LEVELS[level]+'?'))return;questions[level].splice(index,1);saveQuestions();if(editingQuestion&&editingQuestion.level===level&&editingQuestion.index===index)cancelEditQuestion();renderAdminQuestions();toast('Soal dihapus dari bank soal lokal.')}
+function deleteQuestion(level,index){if(!confirm('Hapus soal ini dari level '+LEVELS[level]+'?'))return;questions[level].splice(index,1);saveQuestions();if(editingQuestion&&editingQuestion.level===level&&editingQuestion.index===index)cancelEditQuestion();renderAdminQuestions();toast('Soal dihapus dari bank soal; sinkronisasi Supabase sedang diproses.')}
 
 function normalizeTrueFalseBank(){for(const k of Object.keys(DEFAULT_TRUE_FALSE)){if(!Array.isArray(trueFalseQuestions[k]))trueFalseQuestions[k]=[];for(const q of DEFAULT_TRUE_FALSE[k].slice(0,10))if(trueFalseQuestions[k].length<10&&!trueFalseQuestions[k].some(old=>old[0]===q[0]))trueFalseQuestions[k].push(q)}saveTrueFalse()}
-function saveTrueFalse(){localStorage.setItem('kumbara_true_false',JSON.stringify(trueFalseQuestions))}
+function saveTrueFalse(){
+ localStorage.setItem('kumbara_true_false',JSON.stringify(trueFalseQuestions));
+ supabaseSaveBank('tf',trueFalseQuestions);
+}
 function addTrueFalseQuestion(){let level=document.getElementById('tfLevel').value,q=document.getElementById('tfQuestion').value.trim(),answer=document.getElementById('tfCorrect').value==='true',ex=document.getElementById('tfExplain').value.trim();if(!q||!ex){toast('Lengkapi pernyataan dan pembahasan.');return}trueFalseQuestions[level].push([q,answer,ex]);saveTrueFalse();document.getElementById('tfQuestion').value='';document.getElementById('tfExplain').value='';renderTrueFalseAdmin();toast('Soal Benar/Salah ditambahkan.')}
 function editTrueFalse(level,index){let q=trueFalseQuestions[level][index];if(!q)return;document.getElementById('tfLevel').value=level;document.getElementById('tfQuestion').value=q[0];document.getElementById('tfCorrect').value=String(q[1]);document.getElementById('tfExplain').value=q[2];trueFalseQuestions[level].splice(index,1);saveTrueFalse();renderTrueFalseAdmin();document.getElementById('tfQuestion').focus();toast('Soal dimuat ke formulir. Simpan dengan tombol tambah untuk menerapkan perubahan.')}
 function deleteTrueFalse(level,index){if(confirm('Hapus soal Benar/Salah ini?')){trueFalseQuestions[level].splice(index,1);saveTrueFalse();renderTrueFalseAdmin();toast('Soal dihapus.')}}
@@ -660,7 +666,7 @@ function feedbackReportHTML(){let avg=key=>feedbacks.length?(feedbacks.reduce((a
 </body></html>`}
 function printFeedbackReport(){let w=window.open('','_blank');if(!w){toast('Izinkan pop-up browser untuk mencetak laporan.');return}w.document.open();w.document.write(feedbackReportHTML());w.document.close();w.onload=()=>{w.focus();w.print()}}
 function exportFeedbackWord(){let html=feedbackReportHTML().replace('<div class="no-print"><button onclick="window.print()">Cetak / Simpan sebagai PDF</button></div>','');downloadFile('Laporan_Feedback_KUMBARA.doc','﻿'+html,'application/msword;charset=utf-8')}
-function clearFeedback(){if(confirm('Hapus seluruh feedback lokal pada perangkat ini? Tindakan ini tidak dapat dibatalkan.')){feedbacks=[];localStorage.removeItem('kumbara_feedback');renderAdminFeedback();toast('Feedback lokal dihapus.')}}
+async function clearFeedback(){if(confirm('Hapus seluruh feedback dari database Supabase? Tindakan ini tidak dapat dibatalkan.')){try{const {error}=await supabaseClient.from('kumbara_feedback').delete().gte('id',0);if(error)throw error;feedbacks=[];localStorage.removeItem('kumbara_feedback');renderAdminFeedback();toast('Feedback di database berhasil dihapus.')}catch(err){console.error(err);toast('Gagal menghapus feedback dari Supabase.')}}}
 function resetQuestions(){if(confirm('Pulihkan bank soal bawaan? Soal tambahan dan perubahan lokal akan hilang.')){questions=JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));trueFalseQuestions=JSON.parse(JSON.stringify(DEFAULT_TRUE_FALSE));normalizeTrueFalseBank();saveQuestions();cancelEditQuestion();renderAdminQuestions();renderTrueFalseAdmin();toast('Bank soal bawaan dipulihkan.')}}
 function adminTab(t,b){document.querySelectorAll('#admin .tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');['questions','feedback','settings'].forEach(k=>document.getElementById('admin'+k[0].toUpperCase()+k.slice(1)).classList.toggle('hidden',k!==t));if(t==='feedback')renderAdminFeedback()}
 function showAdmin(){document.getElementById('adminLoginOverlay').classList.add('show');document.getElementById('adminLoginError').classList.add('hidden');document.getElementById('adminUsername').focus()}
@@ -676,6 +682,7 @@ async function adminLogin(e){
     if(error) throw error;
     if(!data.user){throw new Error('Akun tidak berhasil diverifikasi.');}
     adminAuthenticated=true;
+    await supabaseLoadAdminData();
     document.getElementById('adminLoginOverlay').classList.remove('show');
     document.getElementById('adminPassword').value='';
     errorEl.classList.add('hidden');
@@ -707,7 +714,82 @@ function showHow(){document.getElementById('howOverlay').classList.add('show')}f
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
 function downloadFile(name,content,type){let a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-normalizeTrueFalseBank();renderPlayerSetup();renderAdminQuestions();renderTrueFalseAdmin();refreshFeedbackSignatureUI();document.getElementById('fbLevel').value=LEVELS[selectedLevel];window.addEventListener('resize',()=>{if(!document.getElementById('game').classList.contains('hidden'))setBoardZoom(boardZoomPercent)});
+// ---- Penyimpanan cloud Supabase ----
+const KUMBARA_BANK_TABLE='kumbara_question_banks';
+const KUMBARA_FEEDBACK_TABLE='kumbara_feedback';
+const KUMBARA_SUGGESTIONS_TABLE='kumbara_question_suggestions';
+function supabaseReportError(action,error){console.error('KUMBARA Supabase '+action+':',error);toast('Gagal '+action+' ke Supabase. Pastikan SQL tabel dan RLS sudah diterapkan.');}
+async function supabaseSaveBank(type,bank){
+ if(!adminAuthenticated)return;
+ try{
+  const rows=Object.entries(bank).map(([level,data])=>({id:type+'_'+level,data,updated_at:new Date().toISOString()}));
+  const {error}=await supabaseClient.from(KUMBARA_BANK_TABLE).upsert(rows,{onConflict:'id'});
+  if(error)throw error;
+ }catch(error){supabaseReportError('menyimpan bank soal',error);}
+}
+async function supabaseInsertFeedback(item){
+ const {error}=await supabaseClient.from(KUMBARA_FEEDBACK_TABLE).insert({id:item.id,data:item});
+ if(error)throw error;
+}
+async function supabaseInsertSuggestion(item){
+ const {error}=await supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).insert({id:item.id,data:item});
+ if(error)throw error;
+}
+async function supabaseUpdateSuggestion(item){
+ const {error}=await supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).update({data:item}).eq('id',item.id);
+ if(error)throw error;
+}
+async function supabaseDeleteSuggestion(id){
+ const {error}=await supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).delete().eq('id',id);
+ if(error)throw error;
+}
+async function supabaseLoadQuestionBanks(){
+ const {data,error}=await supabaseClient.from(KUMBARA_BANK_TABLE).select('id,data');
+ if(error)throw error;
+ let mcFound=false,tfFound=false;
+ for(const row of (data||[])){
+  if(row.id.startsWith('mc_')){const level=row.id.slice(3);if(Object.prototype.hasOwnProperty.call(DEFAULT_QUESTIONS,level)&&Array.isArray(row.data)){questions[level]=row.data;mcFound=true;}}
+  else if(row.id.startsWith('tf_')){const level=row.id.slice(3);if(Object.prototype.hasOwnProperty.call(DEFAULT_TRUE_FALSE,level)&&Array.isArray(row.data)){trueFalseQuestions[level]=row.data;tfFound=true;}}
+ }
+ if(mcFound)localStorage.setItem('kumbara_questions',JSON.stringify(questions));
+ if(tfFound)localStorage.setItem('kumbara_true_false',JSON.stringify(trueFalseQuestions));
+ normalizeTrueFalseBank();renderAdminQuestions();renderTrueFalseAdmin();
+}
+async function supabaseMigrateLocalDataIfEmpty(){
+ // Migrasi satu kali dari localStorage ke cloud hanya jika tabel cloud masih kosong.
+ const [banks,fb,sug]=await Promise.all([
+  supabaseClient.from(KUMBARA_BANK_TABLE).select('id').limit(1),
+  supabaseClient.from(KUMBARA_FEEDBACK_TABLE).select('id').limit(1),
+  supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).select('id').limit(1)
+ ]);
+ if(banks.error)throw banks.error;if(fb.error)throw fb.error;if(sug.error)throw sug.error;
+ if(!(banks.data||[]).length){
+  const mc=JSON.parse(localStorage.getItem('kumbara_questions')||'null')||questions;
+  const tf=JSON.parse(localStorage.getItem('kumbara_true_false')||'null')||trueFalseQuestions;
+  const rows=[...Object.entries(mc).map(([level,data])=>({id:'mc_'+level,data,updated_at:new Date().toISOString()})),...Object.entries(tf).map(([level,data])=>({id:'tf_'+level,data,updated_at:new Date().toISOString()}))];
+  if(rows.length){const {error}=await supabaseClient.from(KUMBARA_BANK_TABLE).upsert(rows,{onConflict:'id'});if(error)throw error;}
+ }
+ if(!(fb.data||[]).length){const local=JSON.parse(localStorage.getItem('kumbara_feedback')||'[]');if(local.length){const {error}=await supabaseClient.from(KUMBARA_FEEDBACK_TABLE).upsert(local.map(data=>({id:data.id,data})),{onConflict:'id'});if(error)throw error;}}
+ if(!(sug.data||[]).length){const local=JSON.parse(localStorage.getItem('kumbara_question_suggestions')||'[]');if(local.length){const {error}=await supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).upsert(local.map(data=>({id:data.id,data})),{onConflict:'id'});if(error)throw error;}}
+}
+async function supabaseLoadAdminData(){
+ await supabaseMigrateLocalDataIfEmpty();
+ await supabaseLoadQuestionBanks();
+ const [fb,sug]=await Promise.all([
+  supabaseClient.from(KUMBARA_FEEDBACK_TABLE).select('id,data').order('id',{ascending:true}),
+  supabaseClient.from(KUMBARA_SUGGESTIONS_TABLE).select('id,data').order('id',{ascending:true})
+ ]);
+ if(fb.error)throw fb.error;if(sug.error)throw sug.error;
+ feedbacks=(fb.data||[]).map(r=>r.data);questionSuggestions=(sug.data||[]).map(r=>r.data);
+ localStorage.setItem('kumbara_feedback',JSON.stringify(feedbacks));
+ localStorage.setItem('kumbara_question_suggestions',JSON.stringify(questionSuggestions));
+ renderAdminQuestions();renderTrueFalseAdmin();renderAdminFeedback();
+}
+async function initSupabaseStorage(){
+ try{await supabaseLoadQuestionBanks();}
+ catch(error){console.error('KUMBARA gagal memuat bank soal online:',error);}
+}
+normalizeTrueFalseBank();renderPlayerSetup();renderAdminQuestions();renderTrueFalseAdmin();refreshFeedbackSignatureUI();document.getElementById('fbLevel').value=LEVELS[selectedLevel];window.addEventListener('resize',()=>{if(!document.getElementById('game').classList.contains('hidden'))setBoardZoom(boardZoomPercent)});initSupabaseStorage();
 </script>
 
 <style id="kumbara-board-icons-hero-quickfinish">
